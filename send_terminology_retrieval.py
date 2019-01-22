@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
 send_domain =    {
   "BW": "BODY_WEIGHT_DOMAIN",
-  "BH": "Behavioral",
+  "BH": "BEHAVIORAL_DOMAIN",
   "BG": "BODY_WEIGHT_GAIN_DOMAIN",
   "CL": "CLINICAL_DOMAIN",
   "CO": "COMMENTS_DOMAIN",
@@ -61,7 +61,8 @@ send_domain =    {
   "TS": "TRIAL_SUMMARY_DOMAIN",
   "TT": "TRIAL_STAGES_DOMAIN",
   "TX": "TRIAL_SETS_DOMAIN",
-  "VS": "VITAL_SIGNS_DOMAIN"
+  "VS": "VITAL_SIGNS_DOMAIN",
+  "NORMAL": "NO_TREATMENT_RELATED_EFFECTS_DETECTED"
 }
 #tengo que codificar la busqueda del primer padre que se encuenre en este diccionario para mapear con SEND
 etox_to_send_domain =    {
@@ -78,6 +79,8 @@ etox_to_send_domain =    {
   "ILO:0000060":"EG",
   "ILO:0000092":"BG",
   "ILO:0000167":"DD",
+  "ILO:0000365":"DD",
+  "ILO:0000400":"DD",
   "ILO:0000130":"CL",
   "ILO:0000074":"CL",
   "ILO:0000027":"CL",
@@ -90,8 +93,18 @@ etox_to_send_domain =    {
   "ILO:0000004":"CL",
   "ILO:0000019":"CL",
   "ILO:0000066":"CL",
-  "ILO:0000015":"CL"
+  "ILO:0000015":"CL",
+  "ILO:0000035":"CL",
+  "ILO:0000469":"CL",
+  "ILO:0000564":"CL",
+  "ILO:0000653":"CL",
+  "ILO:0000679":"CL",
+  "ILO:0000186":"CL",
+  "ILO:0000428":"NORMAL" 
 }
+
+
+
 
 def ReadParameters(args):
     if(args.p!=None):
@@ -99,8 +112,8 @@ def ReadParameters(args):
         Config.read(args.p)
         parameters['output']=Config.get('MAIN', 'output')
        
-        parameters['send_terminology_cdi_url']=Config.get('MAIN', 'send_terminology_cdi_url')
-        parameters['cdi_send_terminology_dict_output']=Config.get('MAIN', 'cdi_send_terminology_dict_output')
+        parameters['send_terminology_cdisc_url']=Config.get('MAIN', 'send_terminology_cdisc_url')
+        parameters['cdisc_send_terminology_dict_output']=Config.get('MAIN', 'cdisc_send_terminology_dict_output')
         
         parameters['etox_send_codelists']=Config.get('MAIN', 'etox_send_codelists')
         parameters['etox_send_codelist_terms']=Config.get('MAIN', 'etox_send_codelist_terms')
@@ -134,8 +147,8 @@ def Main(parameters):
     if not os.path.exists(output):
         os.makedirs(output)
     
-    send_terminology_cdi_url = parameters['send_terminology_cdi_url']
-    cdi_send_terminology_dict_output=parameters['cdi_send_terminology_dict_output']
+    send_terminology_cdisc_url = parameters['send_terminology_cdisc_url']
+    cdisc_send_terminology_dict_output=parameters['cdisc_send_terminology_dict_output']
     
     etox_send_codelists = parameters['etox_send_codelists']
     etox_send_codelist_terms = parameters['etox_send_codelist_terms']
@@ -150,17 +163,17 @@ def Main(parameters):
     etox_in_life_obs = parameters['etox_in_life_obs']
     etox_in_life_obs_dict_output = parameters['etox_in_life_obs_dict_output']
     etox_send_terminology_dict_output = parameters['etox_send_terminology_dict_output']
-    
+    '''
     generate_send_etox_corpus(etox_send_codelists, etox_send_codelist_terms, etox_send_codelist_synonyms, etox_send_terminology_dict_output)
     
     generate_anatomy_etox_corpus(etox_anatomy, etox_anatomy_dict_output)
     generate_moa_etox_corpus(etox_moa, etox_moa_dict_output)
     generate_in_life_observation_etox_corpus(etox_in_life_obs, etox_in_life_obs_dict_output)
-    
+    '''
     outputFileSEND = output+"/send_terminology_search.xml"
     
-    download_send_cdis_terminology(send_terminology_cdi_url, outputFileSEND)
-    generate_send_cdis_corpus(outputFileSEND, cdi_send_terminology_dict_output)
+    download_send_cdis_terminology(send_terminology_cdisc_url, outputFileSEND)
+    generate_send_cdis_corpus(outputFileSEND, cdisc_send_terminology_dict_output)
 
 def generate_in_life_observation_etox_corpus(etox_in_life_obs, dict_path):
     logging.info("generate_in_life_observation_etox_corpus  " )
@@ -188,13 +201,18 @@ def generate_in_life_observation_etox_corpus(etox_in_life_obs, dict_path):
                         break
             if(sdomain is None):
                 sdomain = ''
-            dict.write(name+'\tinlife\t'+id+'\tname\t\t'+("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\n')    
+            sdomain_desc = ''
+            if (sdomain!=''):
+                sdomain_desc = send_domain.get(sdomain)   
+                if(sdomain_desc is None):
+                    sdomain_desc = ''
+            dict.write(name+'\tin_life_observation\t'+id+'\tname\t\t'+("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\t'+sdomain_desc+'\n')    
             if('synonym' in data):
                 synonyms = data['synonym']
                 for syn in synonyms:
                     syn_term = syn[syn.index('"')+1:syn.rindex('"')]
                     syn_dat = syn[syn.rindex('"')+2:]
-                    dict.write(syn_term+'\tinlife\t'+id+'\tsynonym\t'+syn_dat+'\t'+ ("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\n')
+                    dict.write(syn_term+'\tin_life_observation\t'+id+'\tsynonym\t'+syn_dat+'\t'+ ("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\t'+sdomain_desc+'\n')    
                     dict.flush()
             dict.flush()   
     logging.info(" Process end" )
@@ -311,13 +329,13 @@ def download_send_cdis_terminology(send_terminology_url, outputFile):
     logging.info("Download End ")  
 
 def generate_send_cdis_corpus(unputUniprotFile, outputFile):
-    logging.info("generate_send_cdis_corpus " )
+    logging.info("generate_send_cdisc_corpus " )
     name_space = "{http://www.cdisc.org/ns/odm/v1.3}"
     nciodm_name_space="{http://ncicb.nci.nih.gov/xml/odm/EVS/CDISC}"
     docXml = ET.parse(unputUniprotFile)
     root = docXml.getroot()
     with open(outputFile,'w') as new_result: 
-        new_result.write('keyword\tolabel\toid_id\tkeyword_type\t\n')
+        new_result.write('keyword\tlabel\tsub_label\tid_id\tkeyword_type\t\n')
         study_xml = root.find(name_space+"Study")
         metadataversion_xml = study_xml.find(name_space+"MetaDataVersion")
         for entry in metadataversion_xml.findall(name_space+"CodeList"):
@@ -325,15 +343,17 @@ def generate_send_cdis_corpus(unputUniprotFile, outputFile):
                 oid=entry.attrib.get("OID")
                 oid_i = oid.rfind('.')
                 oid=oid[oid_i+1:]
+                code_list_name = entry.attrib.get("Name")
+                code_list_name = code_list_name.upper()
                 for item in entry.findall(name_space+"EnumeratedItem"):
                     code = item.attrib.get("CodedValue")
                     if (send_domain.get(code) is not None):
                         code = send_domain.get(code)
                     nciodm_ExtCodeID = item.attrib.get(nciodm_name_space+"ExtCodeID")
                     for syn in item.findall(nciodm_name_space+"CDISCSynonym"):
-                        new_result.write(syn.text+'\t'+ code.replace(" ","_") +'\t'+ nciodm_ExtCodeID +'\t'+ 'synonym'+'\n')
+                        new_result.write(syn.text+'\t'+ code_list_name +'\t' + code.replace(" ","_") +'\t'+ oid +'\t'+ nciodm_ExtCodeID +'\t'+ 'synonym'+'\n')
                     nciodm_PreferredTerm=item.find(nciodm_name_space+"PreferredTerm")   
-                    new_result.write(nciodm_PreferredTerm.text+'\t'+ code.replace(" ","_") +'\t'+ nciodm_ExtCodeID +'\t'+ 'primary'+'\n')
+                    new_result.write(nciodm_PreferredTerm.text+'\t'+ code_list_name +'\t' +code.replace(" ","_") +'\t'+ oid +'\t'+ nciodm_ExtCodeID +'\t'+ 'primary'+'\n')
                     new_result.flush()
             except Exception as inst:
                 logging.error("Error reading" + entry.find(name_space+"name").text)  
