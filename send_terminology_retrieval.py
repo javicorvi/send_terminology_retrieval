@@ -38,7 +38,7 @@ send_domain =    {
   "FM": "FETAL_DOMAIN",
   "FW": "FOOD_WATER_CONSUMPTION_DOMAIN",
   "FX": "FETAL_PATOLOGY_FINDINGS_DOMAIN",
-  "IC": "IMPLATATION_CLASSIFICATION_DOMAIN",
+  "IC": "IMPLANTATION_CLASSIFICATION_DOMAIN",
   "LB": "LABORATORY_FINDINGS_DOMAIN",
   "LR": "CESARIAN_SECTION_DELIVERY_LITTER_DOMAIN",
   "MA": "MACROSCOPIC_FINDINGS_DOMAIN",
@@ -62,7 +62,7 @@ send_domain =    {
   "TT": "TRIAL_STAGES_DOMAIN",
   "TX": "TRIAL_SETS_DOMAIN",
   "VS": "VITAL_SIGNS_DOMAIN",
-  "NORMAL": "NO_TREATMENT_RELATED_EFFECTS_DETECTED"
+  "NORMAL": "NO_TREATMENT_RELATED_EFFECT_DETECTED"
 }
 #tengo que codificar la busqueda del primer padre que se encuenre en este diccionario para mapear con SEND
 etox_to_send_domain =    {
@@ -163,13 +163,13 @@ def Main(parameters):
     etox_in_life_obs = parameters['etox_in_life_obs']
     etox_in_life_obs_dict_output = parameters['etox_in_life_obs_dict_output']
     etox_send_terminology_dict_output = parameters['etox_send_terminology_dict_output']
-    '''
+    
     generate_send_etox_corpus(etox_send_codelists, etox_send_codelist_terms, etox_send_codelist_synonyms, etox_send_terminology_dict_output)
     
     generate_anatomy_etox_corpus(etox_anatomy, etox_anatomy_dict_output)
     generate_moa_etox_corpus(etox_moa, etox_moa_dict_output)
     generate_in_life_observation_etox_corpus(etox_in_life_obs, etox_in_life_obs_dict_output)
-    '''
+    
     outputFileSEND = output+"/send_terminology_search.xml"
     
     download_send_cdis_terminology(send_terminology_cdisc_url, outputFileSEND)
@@ -178,7 +178,7 @@ def Main(parameters):
 def generate_in_life_observation_etox_corpus(etox_in_life_obs, dict_path):
     logging.info("generate_in_life_observation_etox_corpus  " )
     with open(dict_path,'w') as dict: 
-        dict.write('keyword\tlabel\tterm_id\tkeyword_type\tsynonym_dat\tis_a\tis_part_of\tSEND_domain\n')
+        dict.write('KEYWORD\tLABEL\tTERM_ID\tKEYWORD_TYPE\tSYNONYM_DAT\tIS_A\tIS_PART_OF\tSEND_DOMAIN_CODE\tSEND_DOMAIN_DESC\n')
         graph = obonet.read_obo(etox_in_life_obs)
         id_to_name = {id_: data for id_, data in graph.nodes(data=True)}
         for node in graph.nodes(data=True):
@@ -202,17 +202,21 @@ def generate_in_life_observation_etox_corpus(etox_in_life_obs, dict_path):
             if(sdomain is None):
                 sdomain = ''
             sdomain_desc = ''
+            label = 'IN_LIFE_OBSERVATION'
             if (sdomain!=''):
-                sdomain_desc = send_domain.get(sdomain)   
+                sdomain_desc = send_domain.get(sdomain) 
+                label=sdomain_desc
                 if(sdomain_desc is None):
                     sdomain_desc = ''
-            dict.write(name+'\tin_life_observation\t'+id+'\tname\t\t'+("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\t'+sdomain_desc+'\n')    
+                    label = 'IN_LIFE_OBSERVATION'
+                    
+            dict.write(name+'\t'+label+'\t'+id+'\tNAME\t\t'+("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\t'+sdomain_desc+'\n')    
             if('synonym' in data):
                 synonyms = data['synonym']
                 for syn in synonyms:
                     syn_term = syn[syn.index('"')+1:syn.rindex('"')]
                     syn_dat = syn[syn.rindex('"')+2:]
-                    dict.write(syn_term+'\tin_life_observation\t'+id+'\tsynonym\t'+syn_dat+'\t'+ ("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\t'+sdomain_desc+'\n')    
+                    dict.write(syn_term+'\t'+label+'\t'+id+'\tSYNONYM\t'+syn_dat+'\t'+ ("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\t'+sdomain_desc+'\n')    
                     dict.flush()
             dict.flush()   
     logging.info(" Process end" )
@@ -232,9 +236,8 @@ def getStutyDomain(node):
 def generate_anatomy_etox_corpus(etox_anatomy, dict_path):
     logging.info("generate_anatomy_etox_corpus  " )
     with open(dict_path,'w') as new_result:
-        new_result.write('keyword\tlabel\tterm_id\tkeyword_type\tsynonym_dat\tis_a\tis_part_of\n')
+        new_result.write('KEYWORD\tLABEL\tTERM_ID\tKEYWORD_TYPE\tSYNONYM_DAT\tIS_A\tIS_PART_OF\n')
         graph = obonet.read_obo(etox_anatomy)
-        #id_to_name = {id_: data for id_, data in graph.nodes(data=True)}
         for node in graph.nodes(data=True):
             id = node[0]
             data = node[1]
@@ -245,13 +248,13 @@ def generate_anatomy_etox_corpus(etox_anatomy, dict_path):
             relationship=""
             if('relationship' in data):
                 relationship = data['relationship']    
-            new_result.write(name+'\tanatomy\t'+id+'\tname\t\t'+("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\n')
+            new_result.write(name+'\tANATOMY\t'+id+'\tNAME\t\t'+("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\n')
             if('synonym' in data):
                 synonyms = data['synonym']
                 for syn in synonyms:
                     syn_term = syn[syn.index('"')+1:syn.rindex('"')]
                     syn_dat = syn[syn.rindex('"')+2:]
-                    new_result.write(syn_term+'\tanatomy\t'+id+'\tsynonym\t'+syn_dat+'\t'+ ("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\n' )
+                    new_result.write(syn_term+'\tANATOMY\t'+id+'\tSYNONYM\t'+syn_dat+'\t'+ ("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\n' )
                     new_result.flush()
                     
             new_result.flush()   
@@ -261,9 +264,8 @@ def generate_anatomy_etox_corpus(etox_anatomy, dict_path):
 def generate_moa_etox_corpus(etox_moa, dict_path):
     logging.info("generate_moa_etox_corpus  " )
     with open(dict_path,'w') as new_result: 
-        new_result.write('keyword\tlabel\tterm_id\tkeyword_type\tsynonym_dat\tis_a\tis_part_of\n')
+        new_result.write('KEYWORD\tLABEL\tTERM_ID\tKEYWORD_TYPE\tSYNONYM_DAT\tIS_A\tIS_PART_OF\n')
         graph = obonet.read_obo(etox_moa)
-        #id_to_name = {id_: data for id_, data in graph.nodes(data=True)}
         for node in graph.nodes(data=True):
             id = node[0]
             data = node[1]
@@ -274,13 +276,13 @@ def generate_moa_etox_corpus(etox_moa, dict_path):
             relationship=""
             if('relationship' in data):
                 relationship = data['relationship']    
-            new_result.write(name+'\tmoa\t'+id+'\tname\t\t'+("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\n')
+            new_result.write(name+'\tMOA\t'+id+'\tNAME\t\t'+("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\n')
             if('synonym' in data):
                 synonyms = data['synonym']
                 for syn in synonyms:
                     syn_term = syn[syn.index('"')+1:syn.rindex('"')]
                     syn_dat = syn[syn.rindex('"')+2:]
-                    new_result.write(syn_term+'\tmoa\t'+id+'\tsynonym\t'+syn_dat+'\t'+ ("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\n' )
+                    new_result.write(syn_term+'\tMOA\t'+id+'\tSYNONYM\t'+syn_dat+'\t'+ ("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\n' )
                     new_result.flush()
             new_result.flush()   
                    
@@ -294,7 +296,7 @@ def generate_send_etox_corpus(etox_send_codelists, etox_send_codelist_terms, eto
         with open(etox_send_codelist_terms,'r') as terms:
             with open(etox_send_codelist_synonyms,'r') as synonyms:
                 with open(dict_path,'w') as new_result: 
-                    new_result.write('keyword\tlabel\tcodelist_id\tterm_id\tkeyword_type\tterm_name\tsynonym_type\tsource\n')
+                    new_result.write('KEYWORD\tLABEL\tCODELIST_ID\tTERM_ID\tKEYWORD_TYPE\tTERM_NAME\tSYNONYM_TYPE\tSOURCE\n')
                     new_result.flush()
                     for line_codelist in code_list:
                         data_codelist = line_codelist.split('\t')
@@ -303,14 +305,14 @@ def generate_send_etox_corpus(etox_send_codelists, etox_send_codelist_terms, eto
                             for line_term in terms:
                                 data_term = line_term.split('\t')
                                 if(data_codelist[0]==data_term[0] and data_codelist[0]!='CODELIST_ID'):
-                                    new_result.write(data_term[2] + '\t' + data_codelist[2] + '\t' + data_term[0] + '\t' + data_term[1] + '\tprimary' +'\t\t\t\n' )
+                                    new_result.write(data_term[2] + '\t' + data_codelist[2] + '\t' + data_term[0] + '\t' + data_term[1] + '\tPRIMARY' +'\t\t\t\n' )
                                     new_result.flush()
                                     
                                     synonyms.seek(0)
                                     for line_syn in synonyms:
                                         data_syn = line_syn.split('\t')
                                         if(data_syn[1]==data_term[1] and data_syn[0]!='CODELIST_ID'):
-                                            new_result.write(data_syn[2] + '\t' + data_codelist[2] + '\t' + data_term[0] + '\t' + data_term[1] + '\tsynonym' + '\t' + data_term[2] + '\t' + data_syn[3] + '\t' + data_syn[4])
+                                            new_result.write(data_syn[2] + '\t' + data_codelist[2] + '\t' + data_term[0] + '\t' + data_term[1] + '\tSYNONYM' + '\t' + data_term[2] + '\t' + data_syn[3] + '\t' + data_syn[4])
                                     new_result.flush()   
                                     
                             
@@ -335,7 +337,7 @@ def generate_send_cdis_corpus(unputUniprotFile, outputFile):
     docXml = ET.parse(unputUniprotFile)
     root = docXml.getroot()
     with open(outputFile,'w') as new_result: 
-        new_result.write('keyword\tlabel\tsub_label\tid_id\tkeyword_type\t\n')
+        new_result.write('KEYWORD\tLABEL\tSUB_LABEL\tOID\tEXT_CODE_ID\tKEYWORD_TYPE\n')
         study_xml = root.find(name_space+"Study")
         metadataversion_xml = study_xml.find(name_space+"MetaDataVersion")
         for entry in metadataversion_xml.findall(name_space+"CodeList"):
@@ -351,9 +353,9 @@ def generate_send_cdis_corpus(unputUniprotFile, outputFile):
                         code = send_domain.get(code)
                     nciodm_ExtCodeID = item.attrib.get(nciodm_name_space+"ExtCodeID")
                     for syn in item.findall(nciodm_name_space+"CDISCSynonym"):
-                        new_result.write(syn.text+'\t'+ code_list_name +'\t' + code.replace(" ","_") +'\t'+ oid +'\t'+ nciodm_ExtCodeID +'\t'+ 'synonym'+'\n')
+                        new_result.write(syn.text+'\t'+ oid+'_'+code_list_name +'\t' + code.replace(" ","_") +'\t'+ oid +'\t'+ nciodm_ExtCodeID +'\t'+ 'SYNONYM'+'\n')
                     nciodm_PreferredTerm=item.find(nciodm_name_space+"PreferredTerm")   
-                    new_result.write(nciodm_PreferredTerm.text+'\t'+ code_list_name +'\t' +code.replace(" ","_") +'\t'+ oid +'\t'+ nciodm_ExtCodeID +'\t'+ 'primary'+'\n')
+                    new_result.write(nciodm_PreferredTerm.text+'\t'+ oid+'_'+code_list_name +'\t' +code.replace(" ","_") +'\t'+ oid +'\t'+ nciodm_ExtCodeID +'\t'+ 'PRIMARY'+'\n')
                     new_result.flush()
             except Exception as inst:
                 logging.error("Error reading" + entry.find(name_space+"name").text)  
