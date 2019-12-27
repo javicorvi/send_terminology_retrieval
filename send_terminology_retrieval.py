@@ -9,7 +9,7 @@ import logging
 import xml.etree.ElementTree as ET
 import networkx
 import obonet
-import pandas 
+
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
@@ -21,6 +21,8 @@ if __name__ == '__main__':
     import send_terminology_retrieval
     parameters = send_terminology_retrieval.ReadParameters(args)     
     send_terminology_retrieval.Main(parameters)
+
+codelist_id_dictionary ={};
 
 send_domain =    {
   "BW": "BODY_WEIGHT_DOMAIN",
@@ -170,16 +172,15 @@ def Main(parameters):
     
     outputFileSEND = output+"/send_terminology_search.xml"
     
-    umls_terminology_path = parameters['umls_terminology_path']
-    umls_terminology_dict_path = parameters['umls_terminology_dict_path']
+    download_send_cdis_terminology(send_terminology_cdisc_url, outputFileSEND)
+    generate_send_cdis_corpus(outputFileSEND, cdisc_send_terminology_dict_output)
     
     generate_send_etox_corpus(etox_send_codelists, etox_send_codelist_terms, etox_send_codelist_synonyms, etox_send_terminology_dict_output)
     generate_anatomy_etox_corpus(etox_anatomy, etox_anatomy_dict_output)
     generate_moa_etox_corpus(etox_moa, etox_moa_dict_output)
     generate_in_life_observation_etox_corpus(etox_in_life_obs, etox_in_life_obs_dict_output)
-    download_send_cdis_terminology(send_terminology_cdisc_url, outputFileSEND)
-    generate_send_cdis_corpus(outputFileSEND, cdisc_send_terminology_dict_output)
-    generate_umls_terminology_dict(umls_terminology_path, umls_terminology_dict_path)
+    
+    
     
     
     
@@ -188,7 +189,7 @@ def Main(parameters):
     convert_to_gate_gazetter(etox_moa_dict_output, etox_moa_dict_output.replace(".txt",".lst"))
     convert_to_gate_gazetter(etox_in_life_obs_dict_output, etox_in_life_obs_dict_output.replace(".txt",".lst"))
     convert_to_gate_gazetter(cdisc_send_terminology_dict_output, cdisc_send_terminology_dict_output.replace(".txt",".lst"))
-    convert_to_gate_gazetter(umls_terminology_dict_path, umls_terminology_dict_path.replace(".txt",".lst"))
+    
     
     
     
@@ -196,7 +197,7 @@ def generate_in_life_observation_etox_corpus(etox_in_life_obs, dict_path):
     logging.info("generate_in_life_observation_etox_corpus  " )
     terms_list = []
     with open(dict_path,'w') as dict: 
-        dict.write('INTERNAL_CODE\tKEYWORD\tLABEL\tTERM_ID\tKEYWORD_TYPE\tSYNONYM_DAT\tIS_A\tIS_PART_OF\tSEND_DOMAIN_CODE\tSEND_DOMAIN_DESC\n')
+        dict.write('INTERNAL_CODE\tKEYWORD\tLABEL\tETOX_TERM_ID\tETOX_KEYWORD_TYPE\tETOX_SYNONYM_DAT\tETOX_IS_A\tETOX_IS_PART_OF\tETOX_SEND_DOMAIN_CODE\tETOX_SEND_DOMAIN_DESC\n')
         graph = obonet.read_obo(etox_in_life_obs)
         internal_code = 1
         id_to_name = {id_: data for id_, data in graph.nodes(data=True)}
@@ -261,7 +262,7 @@ def generate_anatomy_etox_corpus(etox_anatomy, dict_path):
     logging.info("generate_anatomy_etox_corpus  " )
     terms_list = []
     with open(dict_path,'w') as new_result:
-        new_result.write('INTERNAL_CODE\tKEYWORD\tLABEL\tTERM_ID\tKEYWORD_TYPE\tSYNONYM_DAT\tIS_A\tIS_PART_OF\n')
+        new_result.write('INTERNAL_CODE\tKEYWORD\tLABEL\tETOX_TERM_ID\tETOX_KEYWORD_TYPE\tETOX_SYNONYM_DAT\tETOX_IS_A\tETOX_IS_PART_OF\n')
         graph = obonet.read_obo(etox_anatomy)
         internal_code = 1
         for node in graph.nodes(data=True):
@@ -301,7 +302,7 @@ def generate_moa_etox_corpus(etox_moa, dict_path):
     logging.info("generate_moa_etox_corpus  " )
     terms_list = []
     with open(dict_path,'w') as new_result: 
-        new_result.write('INTERNAL_CODE\tKEYWORD\tLABEL\tTERM_ID\tKEYWORD_TYPE\tSYNONYM_DAT\tIS_A\tIS_PART_OF\n')
+        new_result.write('INTERNAL_CODE\tKEYWORD\tLABEL\tETOX_TERM_ID\tETOX_KEYWORD_TYPE\tETOX_SYNONYM_DAT\tETOX_IS_A\tETOX_IS_PART_OF\n')
         graph = obonet.read_obo(etox_moa)
         internal_code = 1
         for node in graph.nodes(data=True):
@@ -340,7 +341,7 @@ def generate_send_etox_corpus(etox_send_codelists, etox_send_codelist_terms, eto
         with open(etox_send_codelist_terms,'r') as terms:
             with open(etox_send_codelist_synonyms,'r') as synonyms:
                 with open(dict_path,'w') as new_result: 
-                    new_result.write('INTERNAL_CODE\tKEYWORD\tLABEL\tCODELIST_ID\tTERM_ID\tKEYWORD_TYPE\tTERM_NAME\tSYNONYM_TYPE\tSOURCE\n')
+                    new_result.write('INTERNAL_CODE\tKEYWORD\tLABEL\tETOX_CODELIST\tETOX_CODELIST_ID\tETOX_SEND_CODE_ID\tETOX_SEND_CODE\tETOX_KEYWORD_TYPE\tETOX_TERM_NAME\tETOX_SYNONYM_TYPE\tETOX_SOURCE\n')
                     new_result.flush()
                     internal_code = 1
                     for line_codelist in code_list:
@@ -352,7 +353,12 @@ def generate_send_etox_corpus(etox_send_codelists, etox_send_codelist_terms, eto
                                 if(data_codelist[0]==data_term[0] and data_codelist[0]!='CODELIST_ID'):
                                     if(data_term[2].lower() not in terms_list):
                                         terms_list.append(data_term[2].lower())    
-                                        new_result.write(str(internal_code) +'\t'+data_term[2].lower() + '\t' + data_codelist[2] + '\t' + data_term[0] + '\t' + data_term[1] + '\tPRIMARY' +'\t \t \t \n' )
+                                        etox_send_code = ''
+                                        if(data_term[0]=='C67154'):
+                                            data_term[0]='C65047' 
+                                        if data_term[0]+"_"+data_term[1] in codelist_id_dictionary:
+                                            etox_send_code = codelist_id_dictionary[data_term[0]+"_"+data_term[1]]
+                                        new_result.write(str(internal_code) +'\t'+data_term[2].lower() + '\t' + data_codelist[2] + '\t' + data_codelist[2] + '\t' + data_term[0] + '\t' + data_term[1] + '\t' +etox_send_code + '\tPRIMARY' +'\t\t\t\n' )
                                         new_result.flush()
                                         internal_code = internal_code + 1
                                     synonyms.seek(0)
@@ -361,10 +367,11 @@ def generate_send_etox_corpus(etox_send_codelists, etox_send_codelist_terms, eto
                                         if(data_syn[1]==data_term[1] and data_syn[0]!='CODELIST_ID'):
                                             if(data_syn[2].lower() not in terms_list):
                                                 terms_list.append(data_syn[2].lower()) 
-                                                new_result.write(str(internal_code) +'\t'+data_syn[2].lower() + '\t' + data_codelist[2] + '\t' + data_term[0] + '\t' + data_term[1] + '\tSYNONYM' + '\t' + data_term[2] + '\t' + data_syn[3] + '\t' + data_syn[4])
+                                                new_result.write(str(internal_code) +'\t'+data_syn[2].lower() + '\t' + data_codelist[2] + '\t' + data_codelist[2] + '\t' + data_term[0] + '\t' + data_term[1] + '\t' + etox_send_code + '\tSYNONYM' + '\t' + data_term[2] + '\t' + data_syn[3]+ '\t' + data_syn[4])
                                                 internal_code = internal_code + 1
                                     new_result.flush()   
     logging.info(" Process end" )
+
 
 def download_send_cdis_terminology(send_terminology_url, outputFile):
     logging.info("Downloading SEND Terminology from : " + send_terminology_url )
@@ -385,61 +392,48 @@ def generate_send_cdis_corpus(unputUniprotFile, outputFile):
     docXml = ET.parse(unputUniprotFile)
     root = docXml.getroot()
     with open(outputFile,'w') as new_result: 
-        new_result.write('INTERNAL_CODE\tKEYWORD\tLABEL\tSUB_LABEL\tOID\tEXT_CODE_ID\tKEYWORD_TYPE\n')
+        new_result.write('INTERNAL_CODE\tKEYWORD\tLABEL\tCDISC_SEND_CODE\tCDISC_CODELIST\tCDISC_SEND_CODE_ID\tCDISC_CODELIST_NAME\tCDISC_KEYWORD_TYPE\tCDISC_CODELIST_ID\tCDISC_CODELIST_LINK\n')
         study_xml = root.find(name_space+"Study")
         metadataversion_xml = study_xml.find(name_space+"MetaDataVersion")
         internal_code = 1
         for entry in metadataversion_xml.findall(name_space+"CodeList"):
             try:
                 oid=entry.attrib.get("OID")
+                link=oid
                 oid_i = oid.rfind('.')
                 oid=oid[oid_i+1:]
+                oid_codelist = entry.attrib.get(nciodm_name_space+"ExtCodeID")
                 code_list_name = entry.attrib.get("Name")
                 code_list_name = code_list_name.upper()
                 for item in entry.findall(name_space+"EnumeratedItem"):
                     code = item.attrib.get("CodedValue").replace(" ","_")
-                    if (send_domain.get(code) is not None):
-                        code = send_domain.get(code)
+                    '''if (send_domain.get(code) is not None):
+                        code = send_domain.get(code)'''
                     code = code.replace(" ","_")    
                     nciodm_ExtCodeID = item.attrib.get(nciodm_name_space+"ExtCodeID")
+                    codelist_id_dictionary[oid_codelist+"_"+nciodm_ExtCodeID] = item.attrib.get("CodedValue")
                     label = oid+'_'+item.attrib.get("CodedValue")+'_'+code_list_name
-                    '''
-                    if(code_list_name.endswith('TEST CODE') or oid=='PKPARMCD' or oid=='CLCAT' or oid=='FXFINDRS' or oid=='FXRESCAT' or oid=='NEOPLASM'):
-                        label = oid+'_'+item.attrib.get("CodedValue")+'_'+code_list_name
-                    else:    
-                        label = oid+'_'+code_list_name    
-                    '''
+                    #label = oid
                     for syn in item.findall(nciodm_name_space+"CDISCSynonym"):
                         if(syn.text.lower() not in terms_list):
                             terms_list.append(syn.text.lower())
-                            new_result.write(str(internal_code) +'\t'+ syn.text.lower()+'\t'+ label +'\t' + code +'\t'+ oid +'\t'+ nciodm_ExtCodeID +'\t'+ 'SYNONYM'+'\n')
+                            new_result.write(str(internal_code) +'\t'+ syn.text.lower()+'\t'+ label +'\t' + code +'\t'+ oid +'\t'+ nciodm_ExtCodeID +'\t'+ code_list_name +'\t'+ 'SYNONYM'+'\t'+ oid_codelist +'\t'+ link +'\n')
                             internal_code = internal_code + 1
                     nciodm_PreferredTerm=item.find(nciodm_name_space+"PreferredTerm") 
-                    if(nciodm_PreferredTerm.text.lower() not in terms_list):
-                        terms_list.append(nciodm_PreferredTerm.text.lower())    
-                        new_result.write(str(internal_code) +'\t'+nciodm_PreferredTerm.text.lower()+'\t'+ label +'\t' +code +'\t'+ oid +'\t'+ nciodm_ExtCodeID +'\t'+ 'PRIMARY'+'\n')
+                    term = nciodm_PreferredTerm.text.lower()
+                    if(term not in terms_list):
+                        terms_list.append(term)    
+                        new_result.write(str(internal_code) +'\t'+term+'\t'+ label +'\t' +code +'\t'+ oid +'\t'+ nciodm_ExtCodeID +'\t'+ code_list_name +'\t'+ 'PRIMARY'+'\t'+ oid_codelist +'\t'+ link +'\n')
                         internal_code = internal_code + 1  
+                        new_result.flush()
+                    else:
                         new_result.flush()
             except Exception as inst:
                 logging.error("Error reading" + entry.find(name_space+"name").text)  
                 logging.error(str(inst))  
     logging.info(" Process end" )
 
-def generate_umls_terminology_dict(umls_terminology_path, umls_terminology_dict_path):
-    logging.info("generate_umls_terminology_dict" )
-    #terms_list = []
-    with open(umls_terminology_path,'r') as cui_list: 
-        with open(umls_terminology_dict_path,'w') as new_result: 
-            new_result.write('INTERNAL_CODE\tKEYWORD\tCUI\tLAT\tTS\tLUI\tSTT\tSUI\tISPREF\tAUI\tSAUI\tSCUI\tSDUI\tSAB\tTTY\tCODE\tSRL\tSUPPRESS\n')
-            new_result.flush()
-            internal_code = 1
-            for cui_line in cui_list:
-                cui_data = cui_line.split('|')
-                #terms_list.append(data_term[2].lower())    
-                new_result.write(str(internal_code) +'\t'+cui_data[14] + '\t'  + cui_data[0] + '\t' + cui_data[1] + '\t'+ cui_data[2] + '\t' + cui_data[3] + '\t' + cui_data[4] + '\t'  + cui_data[5] + '\t' + cui_data[6] + '\t' + cui_data[7] + '\t' + cui_data[8] + '\t' + cui_data[9] + '\t' + cui_data[10] + '\t' + cui_data[11] + '\t' + cui_data[12] + '\t' + cui_data[13] + '\t' + cui_data[15] + '\t' + cui_data[16] + '\t' + cui_data[17] +'\n')
-                internal_code = internal_code + 1
-                new_result.flush()   
-    logging.info(" Process end" )
+
 
 def convert_to_gate_gazetter(file, file_new):
     with open(file,'r') as dictionary:
