@@ -64,45 +64,49 @@ send_domain =    {
   "TT": "TRIAL_STAGES_DOMAIN",
   "TX": "TRIAL_SETS_DOMAIN",
   "VS": "VITAL_SIGNS_DOMAIN",
-  "NORMAL": "NO_TREATMENT_RELATED_EFFECT_DETECTED"
+  "NORMAL": "NO_TREATMENT_RELATED_EFFECT_DETECTED",
+  "ANIMAL_IDENTIFICATION_FINDING": "ANIMAL_IDENTIFICATION_FINDING",
+  "DOSING_FINDING": "DOSING_FINDING"
 }
 #tengo que codificar la busqueda del primer padre que se encuenre en este diccionario para mapear con SEND
 etox_to_send_domain =    {
-  "ILO:0000002": "FW",
-  "ILO:0000038": "FW",
-  "ILO:0000007": "RE",
-  "ILO:0000009": "BH",
-  "ILO:0000029": "BW",
-  "ILO:0000012": "FX",
-  "ILO:0000017": "FE",
-  "ILO:0000029": "BW",
-  "ILO:0000053": "CV",
-  "ILO:0000053": "CV",
-  "ILO:0000060":"EG",
-  "ILO:0000092":"BG",
-  "ILO:0000167":"DD",
-  "ILO:0000365":"DD",
-  "ILO:0000400":"DD",
-  "ILO:0000130":"CL",
-  "ILO:0000074":"CL",
-  "ILO:0000027":"CL",
-  "ILO:0000210":"CL",
-  "ILO:0000056":"CL",
-  "ILO:0000117":"CL",
-  "ILO:0000221":"CL",
-  "ILO:0000021":"CL",
-  "ILO:0000224":"CL",
-  "ILO:0000004":"CL",
-  "ILO:0000019":"CL",
-  "ILO:0000066":"CL",
-  "ILO:0000015":"CL",
-  "ILO:0000035":"CL",
-  "ILO:0000469":"CL",
-  "ILO:0000564":"CL",
-  "ILO:0000653":"CL",
-  "ILO:0000679":"CL",
-  "ILO:0000186":"CL",
-  "ILO:0000428":"NORMAL" 
+  "ILO:0000002": "FW", # food consumption
+  "ILO:0000038": "FW", # water consumption
+  "ILO:0000007": "RE", # breathing
+  "ILO:0000009": "BH", # general behaviour
+  "ILO:0000029": "BW", # bodyweight/growth
+  "ILO:0000012": "FX", # feces/urine
+  "ILO:0000017": "FE", # reproductive finding
+  "ILO:0000053": "CV", # cardiovascular parameter
+  "ILO:0000060":"EG", # ecg
+  "ILO:0000092":"BG", # bodyweight increase
+  "ILO:0000167":"DD", # dead (more diagnosis)
+  "ILO:0000365":"DD", # killed DD or CL
+  "ILO:0000400":"CL", # moribund condition DD or CL
+  "ILO:0000130":"CL", # body temperature
+  "ILO:0000074":"CL", # eye
+  "ILO:0000027":"CL", # mouth
+  "ILO:0000210":"CL", # teeth
+  "ILO:0000056":"CL", # locomotive behaviour
+  "ILO:0000117":"CL", # nose
+  "ILO:0000221":"CL", # tongue
+  "ILO:0000021":"CL", # skin/fur
+  "ILO:0000019":"CL", # administration/collection site
+  "ILO:0000066":"CL", # ear
+  "ILO:0000015":"CL", # posture
+  "ILO:0000035":"CL", # general condition
+  "ILO:0000032":"CL", # reflexes
+  "ILO:0000041":"CL", # anus 
+  "ILO:0000045":"CL", # tail
+  "ILO:0000078":"CL", # pulmonary parameter
+  "ILO:0000080":"CL", # cage/bleeding
+  "ILO:0000191":"CL", # digit/claw
+  "ILO:0000195":"CL", # unclasified
+  "ILO:0000685":"CL", # whiskers
+  "ILO:0000004":"CL", # varia
+  "ILO:0000428":"NORMAL", # normal as no finding detected
+  "ILO:0000067" : "ANIMAL_IDENTIFICATION_FINDING" , #animal identification not mapped as finding 
+  "ILO:0000084" : "DOSING_FINDING"  #dosing not mapped findings regarding the dosis
 }
 
 
@@ -180,18 +184,12 @@ def Main(parameters):
     generate_moa_etox_corpus(etox_moa, etox_moa_dict_output)
     generate_in_life_observation_etox_corpus(etox_in_life_obs, etox_in_life_obs_dict_output)
     
-    
-    
-    
-    
     convert_to_gate_gazetter(etox_send_terminology_dict_output, etox_send_terminology_dict_output.replace(".txt",".lst"))
     convert_to_gate_gazetter(etox_anatomy_dict_output, etox_anatomy_dict_output.replace(".txt",".lst"))
     convert_to_gate_gazetter(etox_moa_dict_output, etox_moa_dict_output.replace(".txt",".lst"))
     convert_to_gate_gazetter(etox_in_life_obs_dict_output, etox_in_life_obs_dict_output.replace(".txt",".lst"))
     convert_to_gate_gazetter(cdisc_send_terminology_dict_output, cdisc_send_terminology_dict_output.replace(".txt",".lst"))
-    
-    
-    
+
     
 def generate_in_life_observation_etox_corpus(etox_in_life_obs, dict_path):
     logging.info("generate_in_life_observation_etox_corpus  " )
@@ -231,6 +229,7 @@ def generate_in_life_observation_etox_corpus(etox_in_life_obs, dict_path):
                     label = 'IN_LIFE_OBSERVATION'
             if(name not in terms_list):
                 terms_list.append(name)
+                #dict.write(str(internal_code) +'\t'+name+'\t'+label+'\t'+id+'\tNAME\t \t'+("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\t'+sdomain_desc+'\n')
                 dict.write(str(internal_code) +'\t'+name+'\t'+label+'\t'+id+'\tNAME\t \t'+("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\t'+sdomain_desc+'\n')    
                 internal_code = internal_code + 1
             if('synonym' in data):
@@ -240,6 +239,7 @@ def generate_in_life_observation_etox_corpus(etox_in_life_obs, dict_path):
                     syn_dat = syn[syn.rindex('"')+2:]
                     if(syn_term not in terms_list):
                         terms_list.append(syn_term)
+                        #dict.write(str(internal_code) +'\t'+syn_term+'\t'+label+'\t'+id+'\tSYNONYM\t'+syn_dat+'\t'+ ("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\t'+sdomain_desc+'\n')
                         dict.write(str(internal_code) +'\t'+syn_term+'\t'+label+'\t'+id+'\tSYNONYM\t'+syn_dat+'\t'+ ("-".join(str(x) for x in is_a))+'\t'+("-".join(str(x) for x in relationship))+'\t'+sdomain+'\t'+sdomain_desc+'\n')    
                         dict.flush()
                         internal_code = internal_code + 1
